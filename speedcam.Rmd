@@ -1,0 +1,56 @@
+---
+title: "Speed cam data analysis"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(googledrive)
+
+TIME.SLOT <- 10
+
+df <- read.csv('speed-cam (5).csv',stringsAsFactors = FALSE)
+colnames(df)<-  make.names( c("date","hour","minute","speed","Unit","Speed Photo Path",
+      "X","Y","W","H","Area","Direction"))
+
+
+
+df$datetime <- ymd_hm(paste(df$date,df$hour,df$minute,sep='-'))
+df <- df[!is.na(df$datetime),]
+
+df$interval.minutes <- df$minute %/%TIME.SLOT *TIME.SLOT
+df$interval.datetime <-  ymd_hm(paste(df$date,df$hour,df$interval.minutes,sep='-'))
+
+datetime.index <- data.frame(datetime.index = seq(min(df$datetime),max(df$datetime),by=60))
+
+df <- merge(datetime.index,df,by.x='datetime.index',by.y='datetime',all.x = TRUE)
+
+
+
+```
+
+## Group by 15mn slots
+```{r}
+
+
+groupy <-
+  df %>%
+    group_by(interval.datetime, Direction) %>%
+    summarise(vehicles = n(),max.speed = max(speed),av.speed = mean(speed))
+
+gato <- groupy %>% gather(key,value,-interval.datetime,-Direction)
+gato$key.direction <- paste(gato$key,gato$Direction)
+ggplot(gato %>% filter(!key=='vehicles'),aes(interval.datetime,value,color=key.direction))+geom_line()
+
+ggplot(gato %>% filter(key=='vehicles'),aes(interval.datetime,value))+geom_bar(stat='identity', bin=300)
+```
+
+```{r}
+df %>% top_n(10,speed) %>% select(Speed.Photo.Path,speed) %>% arrange(desc(speed))
+```
+
