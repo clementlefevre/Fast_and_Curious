@@ -10,10 +10,10 @@
 
 ### Tools
 - For speed calculation, on the shelf library (**speedcam**)[https://github.com/pageauc/speed-camera], using opencv **mean_shift** method.
-- For vehicles classification : standard keras wrapper on tensorflow with image augmentation.
+- For vehicles classification : standard keras wrapper on tensorflow with image augmentation, applying standard CNN layers layout.
 
 
 ### As of 2018_04_06
 
-- 20000 vehicle's speeds recorded
-- Validation accuracy on a binary classifier (_car vs bike_) : 95%
+- 30000 vehicle's speeds recorded, 18000 manually classified.
+- Validation accuracy on a binary classifier (_car vs bike_) : 97%
