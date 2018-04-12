@@ -16,6 +16,12 @@ def create_list_all_files():
         df_all_images_files.columns = ['path','filename']
         return df_all_images_files
 
+def filter_images_on_checked_images(df):
+    df_checked_images = pd.read_csv('df_classified_and_checked.csv')
+    df = pd.merge(df_checked_images,df, left_on='filename',right_on='filename',how='inner')
+    import ipdb; ipdb.set_trace()
+    return df
+
 
 def create_folder(path):
     if not os.path.exists(path):
@@ -49,6 +55,7 @@ def copy_images_files_in_keras_data_folder(df):
 
 if __name__ == '__main__':
     df_all_images_files = create_list_all_files()
+    df_all_images_files = filter_images_on_checked_images(df_all_images_files)
     df_classif = pd.read_csv('df_classif.csv')
     df_classif =df_classif.drop('path', 1)
     df = pd.merge(df_all_images_files,df_classif,on='filename')

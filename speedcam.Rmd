@@ -11,46 +11,70 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 library(tidyverse)
 library(lubridate)
 library(googledrive)
+library(scales)
 
-TIME.SLOT <- 10
-
-df <- read.csv('speed-cam (5).csv',stringsAsFactors = FALSE)
-colnames(df)<-  make.names( c("date","hour","minute","speed","Unit","Speed Photo Path",
-      "X","Y","W","H","Area","Direction"))
-
-
+df <- read.csv('df_after_prediction.csv',stringsAsFactors = FALSE)
 
 df$datetime <- ymd_hm(paste(df$date,df$hour,df$minute,sep='-'))
+print(dim(df))
 df <- df[!is.na(df$datetime),]
+print(dim(df))
 
-df$interval.minutes <- df$minute %/%TIME.SLOT *TIME.SLOT
-df$interval.datetime <-  ymd_hm(paste(df$date,df$hour,df$interval.minutes,sep='-'))
-
-datetime.index <- data.frame(datetime.index = seq(min(df$datetime),max(df$datetime),by=60))
-
-df <- merge(datetime.index,df,by.x='datetime.index',by.y='datetime',all.x = TRUE)
+df$interval.datetime.hour <-  ymd_h(paste(df$date,df$hour,sep='-'))
 
 
+datetime.hour.index <- data.frame(datetime.index.hour = seq(min(df$interval.datetime.hour),max(df$interval.datetime.hour),by=60*60))
 
+df <- merge(datetime.hour.index,df,by.x='datetime.index.hour',by.y='interval.datetime.hour',all.x = TRUE)
+print(dim(df))
+
+
+df$type <- as.factor(df$classes)
+levels(df$type) <- c("car", "bike")
+
+print(head(df$type))
+print(head(df %>% filter(is.na(speed))))
 ```
 
-## Group by 15mn slots
+```{r}
+df <- df %>% mutate(type=ifelse(is.na(speed), factor(type), type), speed = ifelse(is.na(speed), 0, speed))
+print(head(df$type))
+
+
+
+df.2 <- df %>% filter(speed==0) 
+df.2<- df.2 %>% mutate(type='bike')
+
+
+df<- rbind(df,df.2)
+```
+
+
+```{r}
+ggplot(df %>% filter(as.Date(datetime)>=ymd('2018-04-10')),aes(datetime.index.hour,speed, color=type))+ geom_point(alpha=0.2)+geom_smooth()
+```
+
+## Group by time slots
 ```{r}
 
 
 groupy <-
   df %>%
-    group_by(interval.datetime, Direction) %>%
+    group_by(datetime.index.hour, classes) %>%
     summarise(vehicles = n(),max.speed = max(speed),av.speed = mean(speed))
 
-gato <- groupy %>% gather(key,value,-interval.datetime,-Direction)
-gato$key.direction <- paste(gato$key,gato$Direction)
-ggplot(gato %>% filter(!key=='vehicles'),aes(interval.datetime,value,color=key.direction))+geom_line()
+ggplot(groupy ,aes(datetime.index.hour,av.speed,color=classes))+geom_line()+theme(axis.text.x = element_text(angle=90))+
+  scale_x_datetime(date_breaks = "12 hour",labels = date_format("%d-%m %H:%M:%S"))+theme(legend.position="top")+ylim(10,35)
 
-ggplot(gato %>% filter(key=='vehicles'),aes(interval.datetime,value))+geom_bar(stat='identity', bin=300)
+
+```
+```{r}
+
+ggplot(data=groupy, aes(fill=classes)) + stat_identity(data = groupy, aes(datetime.index.hour, vehicles), geom = "bar", alpha = 0.8,position = "dodge")+theme(axis.text.x = element_text(angle=90))+
+  scale_x_datetime(date_breaks = "12 hour",labels = date_format("%d-%m %H:%M:%S"))+theme(legend.position="top")
 ```
 
 ```{r}
-df %>% top_n(10,speed) %>% select(Speed.Photo.Path,speed) %>% arrange(desc(speed))
+df %>% top_n(10,speed) %>% select(Speed_Photo_Path,speed) %>% arrange(desc(speed))
 ```
 
