@@ -1,5 +1,7 @@
 ## Fast and Curious
 
+![alt text](https://github.com/clementlefevre/Fast_and_Curious/blob/master/SpeedCamFlowChart.png "Logo Title Text 1")
+
 
 ### Concept
 - Using a Raspberry Pi + webcam, record the speed of the vehicles driving in my street.
