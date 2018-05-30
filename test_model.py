@@ -55,18 +55,21 @@ def load_images_paths():
 
 
 def predict(filename,model):
+    try:
+        img = cv2.imread(filename)
+        img = cv2.resize(img,(250,250))
+        img = np.reshape(img,[1,250,250,3])
+        img = img /255.0
 
-    img = cv2.imread(filename)
-    img = cv2.resize(img,(250,250))
-    img = np.reshape(img,[1,250,250,3])
-    img = img /255.0
-
-    classes = model.predict_classes(img)
-   
-    return classes[0][0]
+        classes = model.predict_classes(img)
+    
+        return classes[0][0]
+    except Exception as e:
+        print (filename)
+        print(e)
     
 
-files = [''.join(['data/test/',f]) for f in listdir('data/test/') if isfile(join('data/test/', f))]
+#files = [''.join(['data/test/',f]) for f in listdir('data/test/') if isfile(join('data/test/', f))]
 
 if __name__=='__main__':
     df_images_data = load_images_data()

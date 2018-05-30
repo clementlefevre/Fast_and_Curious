@@ -63,14 +63,13 @@ ggplot(groupy ,aes(datetime.index.hour,av.speed,color=type))+geom_line()+theme(a
 ```
 ```{r}
 
-ggplot(data=groupy, aes(fill=type)) + stat_identity(data = groupy %>% filter(datetime.index.hour>'2018-04-09' &
-                                                                               datetime.index.hour<'2018-04-12'), aes(datetime.index.hour, vehicles), geom = "bar", alpha = 0.8,position = "dodge")+theme(axis.text.x = element_text(angle=90))+
+ggplot(data=groupy, aes(fill=type)) + stat_identity(data = groupy %>% filter(datetime.index.hour>'2018-04-09' 
+                                                                               ), aes(datetime.index.hour, vehicles), geom = "bar", alpha = 0.8,position = "dodge")+theme(axis.text.x = element_text(angle=90))+
   scale_x_datetime(date_breaks = "12 hour",labels = date_format("%d-%m %H:%M"))+theme(legend.position="top",legend.title=element_blank(),axis.title.x=element_blank())+scale_fill_manual(values=cbPalette)
 ```
 ```{r}
-ggplot(data=groupy, aes(fill=type)) + stat_identity(data = groupy %>% filter(datetime.index.hour>'2018-04-08' &
-                                                                               datetime.index.hour<'2018-04-12' & type=='car'), aes(datetime.index.hour, over.speed.limit), geom = "bar", alpha = 0.8,position = "dodge")+theme(axis.text.x = element_text(angle=90))+
-  scale_x_datetime(date_breaks = "6 hour",labels = date_format("%d-%m %H:%M"))+theme(legend.position="top",legend.title=element_blank(),axis.title.x=element_blank())+scale_fill_manual(values='#77003c')+theme(legend.position="none")+ggtitle("Speed limit breach per hour") + 
+ggplot(data=groupy, aes(fill=type)) + stat_identity(data = groupy %>% filter(datetime.index.hour>'2018-04-08'  & type=='car'), aes(datetime.index.hour, over.speed.limit), geom = "bar", alpha = 0.8,position = "dodge")+theme(axis.text.x = element_text(angle=90))+
+  scale_x_datetime(date_breaks = "6 hour",labels = date_format("%d-%m %H:%M"))+theme(legend.position="top",legend.title=element_blank(),axis.title.x=element_blank())+scale_fill_manual(values='#77003c')+theme(legend.position="none")+ggtitle("Speed limit breaches per hour") + 
      theme(plot.title = element_text(lineheight=.8, face="bold"))
 
 
