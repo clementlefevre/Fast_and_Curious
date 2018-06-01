@@ -12,6 +12,7 @@ from keras import backend as K
 from keras import metrics
 import pandas as pd
 from flask.settings import GALLERY_ROOT_DIR
+from flask.settings import SPEED_CAM_CSV_PATH
 
 from classifier_from_speedcam_script import create_model
 
@@ -35,7 +36,7 @@ def load_keras_model():
 
 def load_images_data():
     
-    df_speedcam = pd.read_csv('speed-cam.csv',header=None)
+    df_speedcam = pd.read_csv('speed-cam.csv',header=None, error_bad_lines=False)
     df_speedcam.columns = ["date","hour","minute","speed","Unit","Speed_Photo_Path",
       "X","Y","W","H","Area","Direction"]
     df_speedcam['filename'] = df_speedcam.Speed_Photo_Path.apply(lambda x: x.split('/')[-1])
