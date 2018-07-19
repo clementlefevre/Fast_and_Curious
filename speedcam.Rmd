@@ -6,9 +6,9 @@ output: rmarkdown::github_document
 ```{r}
 library(tidyverse)
 library(lubridate)
-library(googledrive)
 library(scales)
 library(gridExtra)
+library(chron)
 
 df <- read.csv('df_after_prediction.csv',stringsAsFactors = FALSE)
 
@@ -54,6 +54,34 @@ groupy$hour <- hour(groupy$datetime.index.hour)
 groupy$day_week_hour <- ymd_hms(str_c(groupy$day_week,groupy$hour,0,0,sep=':'))
 groupy$date <- date(groupy$datetime.index.hour)
 ```
+## Create a weekday/hour matrix of over speed ratio
+```{r}
+matrix.over.speed <- groupy %>% filter(type=='car') %>% select(date,over.speed.limit,vehicles,hour) %>% filter(date>ymd('2018-04-27')& date<ymd('2018-05-20'))
+matrix.over.speed$weekday <- wday(matrix.over.speed$date)
+
+#matrix.over.speed$ratio <- matrix.over.speed$over.speed.limit/matrix.over.speed$vehicles
+matrix.over.speed <- matrix.over.speed %>% filter(hour>=6 & hour<=22)
+groupy.matrix <- matrix.over.speed %>% group_by(weekday,hour) %>% summarise(ratio = sum(over.speed.limit)/ sum(vehicles)*100)
+groupy.matrix$dayname<- weekdays(groupy.matrix$weekday+2, abbreviate = FALSE)
+
+```
+
+# plot heatmap
+```{r}
+
+SoilSciGuylabs <- c("Sunday", "Monday", "Di", "Mi","Do","Fr","Sa")
+ggplot(groupy.matrix, aes(dayname, hour )) +
+  geom_tile(aes(fill = ratio), color = "white") +
+  scale_fill_gradient(low = "white", high = "#77003c") +
+  ylab("hour") +
+  
+  theme(legend.title = element_text(size = 10),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size=16),
+        axis.title=element_text(size=14,face="bold"),
+        axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(fill = "% Over 50 km/h")
+```
 
 ## Read Wetter Daten
 
@@ -71,8 +99,11 @@ df_wetter <- df_wetter %>% mutate_at(c('TN','TX','TM'), funs(as.numeric(.)))
 ```{r}
 cbPalette <- c("#9acd32","#77003c")
 
-p1 <- ggplot(df %>% filter(as.Date(datetime)>=ymd('2018-04-08')),aes(week_day_hms,speed, color=type))+ geom_jitter(alpha=0.2)+geom_smooth()+theme(legend.position="top",legend.title=element_blank(),axis.title.x=element_blank())+scale_colour_manual(values=cbPalette)
-p1  + facet_wrap( ~ week, nrow = 8) 
+dt <- '2018-05-25'
+p1 <- ggplot(df %>% filter(as.Date(datetime)==ymd(dt)),aes(datetime,speed, color=type))+ geom_jitter(alpha=0.2)+geom_smooth()+theme(legend.position="top",legend.title=element_blank(),axis.title.x=element_blank())+scale_colour_manual(values=cbPalette)+theme(legend.position="none")+ggtitle(dt)
+p1 <- p1  + facet_wrap( ~ type, nrow = 8) 
+
+ggsave(paste0('traffic_',dt,'.png'),p1)
 ```
 
 ## Group by time slots
@@ -103,13 +134,17 @@ ggsave('bike_car.png',p2)
 groupy.per.date <- groupy %>% group_by(date) %>% summarise(total.over.speed = sum(over.speed.limit))
 groupy.per.date <- merge(groupy.per.date,df_wetter,by.x='date',by.y='JJJJMMDD')
 groupy.per.date.bike <- groupy %>% filter(type=='bike') %>%  group_by(date)  %>% summarise(total.bikes = sum(vehicles))
+groupy.per.date.car <-  groupy %>% filter(type=='car') %>%  group_by(date)  %>% summarise(total.cars = sum(vehicles))
 
 groupy.per.date <- merge(groupy.per.date,groupy.per.date.bike,by='date')
+groupy.per.date <- merge(groupy.per.date,groupy.per.date.car,by='date')
+groupy.per.date$ratio.over.speed <- groupy.per.date$total.over.speed/groupy.per.date$total.cars*100
 
-groupy.per.date.stacked <- groupy.per.date %>% select(total.over.speed,total.bikes,TM,date) %>% gather(key,value,-date)
 
-p <- ggplot(groupy.per.date.stacked,aes(date,value))+geom_line(aes(color=key))+scale_color_manual(values=c('#77003c','#c33333',"#9acd32"))+theme(legend.position="top",legend.title=element_blank(),axis.title.x=element_blank())
-p <- p  + facet_wrap( ~ key, nrow = 3,scales='free_y') +ggtitle('Per day - April-Mai 2018')
+groupy.per.date.stacked <- groupy.per.date %>% select(ratio.over.speed,total.bikes,TM,date) %>% gather(key,value,-date)
+
+p <- ggplot(groupy.per.date.stacked,aes(date,value))+geom_line(aes(color=key))+scale_color_manual(values=c('#77003c','#c33333',"#9acd32",'red','blue'))+theme(legend.position="top",legend.title=element_blank(),axis.title.x=element_blank())
+p <- p  + facet_wrap( ~ key, nrow = 3,scales='free_y') +ggtitle('Per day - April-Mai 2018')+theme(legend.position="none")
 p
 
 
@@ -117,17 +152,23 @@ ggsave('speed_temp_bike.png',p)
 ```
 
 
-```{r}
- ggplot(data=groupy, aes(fill=type)) + stat_identity(data = groupy %>% filter(datetime.index.hour>'2018-04-08'  & type=='car'), aes(datetime.index.hour, TN), geom = "bar", alpha = 0.8,position = "dodge")+theme(axis.text.x = element_text(angle=90))+
-  scale_x_datetime(date_breaks = "1 day",labels = date_format("%a"))+theme(legend.position="top",legend.title=element_blank(),axis.title.x=element_blank())+scale_fill_manual(values='#77003c')+theme(legend.position="none")+ggtitle("Speed limit breaches per hour") + 
-     theme(plot.title = element_text(lineheight=.8, face="bold"))
-```
 
 ```{r}
 df %>% top_n(10,speed) %>% select(Speed_Photo_Path,speed) %>% arrange(desc(speed))
 ```
 ```{r}
-model <- lm( total.over.speed ~ TM+total.bikes, data = groupy.per.date)
+
+groupy.model <-groupy.per.date %>% filter(date>=ymd('2018-05-01') & date<ymd('2018-05-20'))
+model <- lm( ratio.over.speed ~ TN+total.bikes, data = groupy.model)
 summary(model)
+```
+
+```{r}
+df.per.over.speed <- df %>% filter(speed>50)# %>% group_by('date') %>% summarise()
+
+ggplot(df.per.over.speed,aes(datetime.index.hour,speed))+ geom_point(aes(color=hour))+geom_smooth()+  scale_x_datetime(date_breaks = "1 day",labels = date_format("%a"))+theme(axis.text.x = element_text(size=8,angle=90,hjust=.5,vjust=.5,face="plain"))
+```
+```{r}
+groupy.over.speed <- df.per.over.speed %>% group_by(weekdays(datetime.index.hour)) %>% summarise(mean.over.speed = mean(speed))
 ```
 
