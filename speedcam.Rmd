@@ -68,12 +68,11 @@ groupy.matrix$dayname<- weekdays(groupy.matrix$weekday+2, abbreviate = FALSE)
 
 # plot heatmap
 ```{r}
-
-SoilSciGuylabs <- c("Sunday", "Monday", "Di", "Mi","Do","Fr","Sa")
-ggplot(groupy.matrix, aes(dayname, hour )) +
+p<-ggplot(groupy.matrix, aes(dayname, hour )) +
   geom_tile(aes(fill = ratio), color = "white") +
   scale_fill_gradient(low = "white", high = "#77003c") +
   ylab("hour") +
+  xlab('')+
   
   theme(legend.title = element_text(size = 10),
         legend.text = element_text(size = 12),
@@ -81,6 +80,8 @@ ggplot(groupy.matrix, aes(dayname, hour )) +
         axis.title=element_text(size=14,face="bold"),
         axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(fill = "% Over 50 km/h")
+
+ggsave('heatmap.png',p)
 ```
 
 ## Read Wetter Daten
