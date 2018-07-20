@@ -8,7 +8,9 @@ library(tidyverse)
 library(lubridate)
 library(scales)
 library(gridExtra)
-library(chron)
+library(stringr)
+
+cbPalette <- c("#9acd32","#77003c")
 
 df <- read.csv('df_after_prediction.csv',stringsAsFactors = FALSE)
 
@@ -62,7 +64,9 @@ matrix.over.speed$weekday <- wday(matrix.over.speed$date)
 #matrix.over.speed$ratio <- matrix.over.speed$over.speed.limit/matrix.over.speed$vehicles
 matrix.over.speed <- matrix.over.speed %>% filter(hour>=6 & hour<=22)
 groupy.matrix <- matrix.over.speed %>% group_by(weekday,hour) %>% summarise(ratio = sum(over.speed.limit)/ sum(vehicles)*100)
-groupy.matrix$dayname<- weekdays(groupy.matrix$weekday+2, abbreviate = FALSE)
+groupy.matrix$dayname<-   factor(groupy.matrix$weekday, levels=1:7,
+                      labels=c("Sunday", "Monday", "Tuesday", "Wednesday",
+                               "Thursday", "Friday", "Saturday"))
 
 ```
 
@@ -72,7 +76,7 @@ p<-ggplot(groupy.matrix, aes(dayname, hour )) +
   geom_tile(aes(fill = ratio), color = "white") +
   scale_fill_gradient(low = "white", high = "#77003c") +
   ylab("hour") +
-  xlab('')+
+  xlab('')+coord_flip()+
   
   theme(legend.title = element_text(size = 10),
         legend.text = element_text(size = 12),
@@ -80,7 +84,7 @@ p<-ggplot(groupy.matrix, aes(dayname, hour )) +
         axis.title=element_text(size=14,face="bold"),
         axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(fill = "% Over 50 km/h")
-
+p
 ggsave('heatmap.png',p)
 ```
 
@@ -91,14 +95,10 @@ df_wetter <- read_table('wetter_berlin.txt')
 df_wetter$JJJJMMDD<- ymd(df_wetter$JJJJMMDD)
 df_wetter <- df_wetter %>% filter(!is.na(JJJJMMDD))
 df_wetter <- df_wetter %>% mutate_at(c('TN','TX','TM'), funs(as.numeric(.)))
-
-
-
-
 ```
 
 ```{r}
-cbPalette <- c("#9acd32","#77003c")
+
 
 dt <- '2018-05-25'
 p1 <- ggplot(df %>% filter(as.Date(datetime)==ymd(dt)),aes(datetime,speed, color=type))+ geom_jitter(alpha=0.2)+geom_smooth()+theme(legend.position="top",legend.title=element_blank(),axis.title.x=element_blank())+scale_colour_manual(values=cbPalette)+theme(legend.position="none")+ggtitle(dt)
